@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TD</title>
+    <style>
+      .game {
+        width: 370px;
+        height: 370px;
+        border: 2px solid black;
+        margin: 0 auto;
+      }
+      .button-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game" class="game">
+      <canvas id="canvas" width="370" height="370"></canvas>
+    </div>
+    <div class="button-container">
+      <button id="pauseButton" onclick="TogglePause()">⏸️</button>
+      <button id="restartButton" onclick="resetGame()">Restart</button>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const boxSize = 37 / 2;
+      const enemies = [];
+      const bullets = [];
+      const towers = [];
+
+      let isPaused = false;
+
+      function TogglePause() {
+        isPaused = !isPaused;
+        const buttonText = isPaused ? "▶️" : "⏸️"; // Using triangle symbol for resume
+        document.getElementById("pauseButton").innerText = buttonText;
+      }
+
+      // Function to handle canvas clicks
+      function handleClick(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left; // Calculate x position
+        const y = event.clientY - rect.top; // Calculate y position
+        console.log(`Clicked at: (${x}, ${y})`); // Log the click position
+        // You can add additional logic here to handle the click
+      }
+      canvas.addEventListener("click", handleClick);
+
+      class Ballista {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.range = 150;
+          this.name = "Ballista";
+          this.damage = 1;
+          this.attackSpeed = 10;
+          this.attackType = "Ranged";
+          this.lastAttackTime = 0;
+        }
+        draw() {
+          ctx.fillStyle = "black";
+          ctx.fillRect(this.x, this.y, boxSize, boxSize);
+        }
+        drawRange() {
+          ctx.beginPath();
+          ctx.strokeStyle = "blue";
+          ctx.arc(
+            this.x + boxSize / 2,
+            this.y + boxSize / 2,
+            this.range,
+            0,
+            2 * Math.PI
+          );
+          ctx.stroke();
+        }
+        isInRange() {
+          const currentTime = Date.now();
+          const attackInterval = 1000 / this.attackSpeed;
+
+          const inRangeEnemies = enemies.filter((enemy) => {
+            let eCenterX = enemy.x + boxSize / 2;
+            let eCenterY = enemy.y + boxSize / 2;
+            const distance = Math.sqrt(
+              Math.pow(eCenterX - (this.x + boxSize / 2), 2) +
+                Math.pow(eCenterY - (this.y + boxSize / 2), 2)
+            );
+
+            if (
+              distance <= this.range &&
+              currentTime - this.lastAttackTime >= attackInterval
+            ) {
+              this.lastAttackTime = currentTime;
+              bullets.push(new Bullet(this.x, this.y, enemy));
+            }
+            return distance <= this.range;
+          });
+        }
+      }
+
+      class Bullet {
+        constructor(x, y, targetEnemy) {
+          this.x = x + boxSize / 4;
+          this.y = y + boxSize / 4;
+          this.targetEnemy = targetEnemy;
+          this.speed = 5;
+          this.damage = 10;
+          this.isHit = false;
+        }
+        draw(bulletx, bullety) {
+          if (this.isHit) {
+            return;
+          }
+          ctx.fillStyle = "red";
+          ctx.fillRect(bulletx, bullety, boxSize / 2, boxSize / 2);
+        }
+        move() {
+          if (this.isHit) {
+            return;
+          }
+
+          const targetX = this.targetEnemy.x + boxSize / 4;
+          const targetY = this.targetEnemy.y + boxSize / 4;
+          const dx = targetX - this.x;
+          const dy = targetY - this.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < this.speed * 6) {
+            this.isHit = true;
+            this.targetEnemy.health -= this.damage;
+          } else {
+            this.x += (dx / distance) * this.speed;
+            this.y += (dy / distance) * this.speed;
+          }
+          this.draw(this.x, this.y);
+        }
+      }
+
+      class Enemy {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.health = 190;
+          this.speed = 1;
+          this.name = "Goblin";
+          this.Dead = false;
+        }
+        draw(enemyx, enemyy) {
+          if (this.Dead) {
+            return;
+          }
+          ctx.font = "10px Arial";
+          ctx.fillStyle = "blue"; // Change font color to blue
+          ctx.fillText(this.health, enemyx, enemyy);
+          ctx.fillStyle = "green";
+          ctx.fillRect(enemyx, enemyy, boxSize, boxSize);
+          return { enemyx, enemyy };
+        }
+        move() {
+          this.x += this.speed;
+          this.draw(this.x, this.y);
+        }
+        isDead() {
+          if (this.health <= 0) {
+            console.log("Enemy is Dead");
+            this.Dead = true;
+            enemies.splice(enemies.indexOf(this), 1);
+            return true;
+          }
+          return false;
+        }
+      }
+
+ 
+      function gameLoop() {
+        if (isPaused) {
+          requestAnimationFrame(gameLoop);
+          return;
+        }
+
+        ctx.clearRect(0, 0, 370, 370);
+        towers.forEach((tower) => {
+          tower.draw();
+          tower.drawRange();
+          tower.isInRange(); // draw bullet
+        });
+        enemies.forEach((enemy) => {
+          if (enemy.isDead()) {
+            return;
+          }
+          enemy.move();
+          enemy.isDead();
+        });
+        bullets.forEach((bullet) => {
+          bullet.move();
+        });
+
+        requestAnimationFrame(gameLoop);
+      }
+      gameLoop();
+
+      function resetGame() {
+        // Clear enemies and bullets
+        enemies.length = 0;
+        bullets.length = 0;
+        // Reset game state
+        isPaused = false;
+        document.getElementById("pauseButton").innerText = "⏸️"; // Reset button text
+        // Reinitialize enemies and towers
+        enemies.push(new Enemy(-10, 265 - boxSize / 2));
+        enemies.push(new Enemy(-30, 265 - boxSize / 2));
+        enemies.push(new Enemy(-50, 100 - boxSize / 2));
+        towers.length = 0; // Clear existing towers
+        towers.push(new Ballista(185 - boxSize / 2, 185 - boxSize / 2));
+        towers.push(new Ballista(100 - boxSize / 2, 150 - boxSize / 2));
+        towers.push(new Ballista(100 - boxSize / 2, 150 - boxSize / 2));
+      }
+
+      // Add event listener for the restart button
+      document.getElementById("restartButton").onclick = resetGame; // Link button to reset function
+    </script>
+  </body>
+</html>
