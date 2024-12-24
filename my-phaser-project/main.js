@@ -1,3 +1,12 @@
+// we are making a tower defense game
+// time to add towers with shooting ablity
+// the towers will be placed on the map and will shoot at the enemies
+// we shall be able to delete towers
+// we shall be able to add towers
+// we shall be able to upgrade towers
+// we shall be able to sell towers
+// we shall be able to buy towers
+
 const config = {
   type: Phaser.AUTO,
   width: 370,
@@ -18,48 +27,80 @@ const config = {
 
 const game = new Phaser.Game(config);
 let boxSize = 37;
-
+let enemy = [];
+let tower = [];
 let graphics;
+let towerInstance;
+let enemyInstance;
 
 function preload() {}
 
 function create() {
-  graphics = this.add.graphics();
-  let scene = this;
-  const circle = scene.physics.add.sprite(185, 185, null); // Create a circular sprite at the specified position
-  circle.setDisplaySize(boxSize, boxSize); // Set the display size to make it a circle
-  circle.setBounce(0.5); // bounce off other objects
-  circle.setCollideWorldBounds(true); // prevent it from going out of bounds
+  graphics = this.add.graphics(); // Set a higher z index using depth
 
-  class Circle {
-    constructor(physicsSprite) {
-      this.sprite = physicsSprite;
-      this.size = boxSize; // Divide by 2 since size is radius for graphics circle
+  class Tower {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.range = 100;
     }
-    
+
     draw() {
-      graphics.clear(); // Clear previous frame
       graphics.fillStyle(0x0000ff, 1);
-      graphics.fillCircle(this.sprite.x, this.sprite.y, this.size);
+      graphics.fillRect(this.x - 18.5, this.y - 18.5, 37, 37);
+
+      graphics.lineStyle(2, 0xff0000, 1);
+      graphics.strokeCircle(this.x, this.y, this.range);
+
+      graphics.setInteractive();
+    }
+    isInRange(enemy) {
+      return (
+        Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y) <=
+        this.range
+      );
+    }
+    update() {
+      this.draw();
     }
   }
-  
-  // Create circle instance
-  const graphicsCircle = new Circle(circle);
-  
-  // Add keyboard controls
-  scene.input.keyboard.on("keydown-SPACE", () => {
-    if (circle.body.touching.down) {
-      circle.setVelocityY(-200);
+
+  class Enemy {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.speed = 1;
+      this.direction = 1; // 1 for right, -1 for left
     }
-  });
+
+    draw(x, y) {
+      graphics.fillStyle(0x00ff00, 1); // green
+      graphics.fillRect(x - 18.5, y - 18.5, 37, 37);
+    }
+    
+    move() {
+    this.draw(this.x, this.y);
+    this.x += this.speed * this.direction;
+    }
+    update() {
+      
+      this.move();
+    }
+    clear() {
+      graphics.clear();
+    }
+  }
+
+  towerInstance = new Tower(185, 185);
   
-  // Add to update loop
-  scene.events.on('update', () => {
-    graphicsCircle.draw();
-  });
+
+  enemyInstance = new Enemy(0, 260);
+  
 }
 
 function update() {
-  // Update loop is handled by the event listener above
+  graphics.clear();
+  towerInstance.update();
+  enemyInstance.update();
+  enemyInstance.move();
 }
