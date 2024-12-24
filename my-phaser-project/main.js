@@ -78,13 +78,25 @@ function create() {
       graphics.fillRect(x - 18.5, y - 18.5, 37, 37);
     }
     
-    move() {
+    move(dir) {
     this.draw(this.x, this.y);
-    this.x += this.speed * this.direction;
+    switch (dir) {
+      case "left":
+        this.x -= this.speed;
+        break;
+      case "right":
+        this.x += this.speed;
+        break;
+      case "up":
+        this.y -= this.speed;
+        break;
+      case "down":
+        this.y += this.speed;
+        break;
+    }
     }
     update() {
-      
-      this.move();
+      this.move("right");
     }
     clear() {
       graphics.clear();
@@ -102,5 +114,5 @@ function update() {
   graphics.clear();
   towerInstance.update();
   enemyInstance.update();
-  enemyInstance.move();
+  enemyInstance.move("right");
 }
