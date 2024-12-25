@@ -1,4 +1,4 @@
-let boxSize = 37;
+let boxSize = 18;
 
 // we shall be able to upgrade towers
 // we shall be able to sell towers
@@ -40,13 +40,13 @@ let gridSize = boxSize;
 let highlightSquare = (x, y) => {
   squareHighlight.value = true;
   graphics.fillStyle(0xffff00, 0.5); // Yellow color with some transparency
-  graphics.fillRect(x, y, 37, 37); // Draw the highlight
+  graphics.fillRect(x, y, gridSize, gridSize); // Draw the highlight
   // console.log("highlightSquare", x, y);
   graphics.lineStyle(2, 0xff0000, 1);
   graphics.strokeCircle(
-    squareHighlight.x + 18.5 + bug,
-    squareHighlight.y + 18.5,
-    100
+    squareHighlight.x + gridSize / 2,
+    squareHighlight.y + gridSize / 2,
+    squareHighlight.range || 100
   );
 };
 
@@ -76,10 +76,10 @@ function create() {
 
   class Tower {
     constructor(x, y, name) {
-      this.x = x + bug;
+      this.x = x; //+ bug;
       this.y = y;
       this.range = 100;
-      this.attackSpeed = 1;
+      this.attackSpeed = 0.01;
       this.attackDamage = 10;
       this.name = name;
       towers.push(this);
@@ -88,14 +88,14 @@ function create() {
 
     draw() {
       graphics.fillStyle(0x0000ff, 1);
-      graphics.fillRect(this.x - 18.5, this.y - 18.5, 37, 37);
+      graphics.fillRect(this.x, this.y, gridSize, gridSize);
       if (
         clickCheck.value &&
         this.x === clickCheck.x &&
         this.y === clickCheck.y
       ) {
         graphics.fillStyle(0xff00ff, 0.5); // Magenta color with some transparency
-        graphics.fillRect(this.x + 37, this.y - 37, 74, 74); // Draw the larger rectangle
+        graphics.fillRect(this.x + gridSize, this.y, gridSize * 2, gridSize*3); // Draw the larger rectangle
       }
     }
     isInRange(enemy) {
@@ -106,7 +106,7 @@ function create() {
       let dy = enemy.y - this.y;
       let distance = Math.sqrt(dx * dx + dy * dy);
       if (distance <= this.range) {
-        let bullet = new Bullet(this.x, this.y, enemy);
+        new Bullet(this.x + gridSize / 2, this.y + gridSize / 2, enemy);
         for (let i = 0; i < bullets.length; i++) {
           bullets[i].update();
         }
@@ -120,7 +120,11 @@ function create() {
     }
     drawRange() {
       graphics.lineStyle(2, 0xff0000, 1);
-      graphics.strokeCircle(this.x, this.y, 100);
+      graphics.strokeCircle(
+        this.x + gridSize / 2,
+        this.y + gridSize / 2,
+        this.range
+      );
     }
   }
 
@@ -128,8 +132,8 @@ function create() {
     constructor(x, y, name, scene) {
       this.x = x;
       this.y = y;
-      this.speed = 1;
-      this.health = 100;
+      this.speed = 2;
+      this.health = 1000;
       this.name = name;
       this.scene = scene;
       enemies.push(this);
@@ -191,13 +195,13 @@ function create() {
       this.x = x;
       this.y = y;
       this.target = target;
-      this.speed = 10;
+      this.speed = 4;
       this.damage = 10;
       bullets.push(this);
     }
     draw() {
       graphics.fillStyle(0xff0000, 1);
-      graphics.fillRect(this.x - 5, this.y - 5, 10, 10);
+      graphics.fillRect(this.x, this.y, 5, 5);
     }
 
     move() {
@@ -228,43 +232,26 @@ function create() {
   });
   const gameContainer = document.getElementById("ImGame");
   gameContainer.addEventListener("dragover", (event) => {
-    createGrid();
+    // console.log("dragover", event.clientX, event.clientY);
     squareHighlight.value = true;
-    squareHighlight.x =
-      Math.floor((event.clientX - gameContainer.offsetLeft) / gridSize) *
-      gridSize;
-    squareHighlight.y =
-      Math.floor((event.clientY - gameContainer.offsetTop) / gridSize) *
-      gridSize;
+    squareHighlight.x = Math.floor((event.clientX - 130) / gridSize) * gridSize;
+    squareHighlight.y = Math.floor(event.clientY / gridSize) * gridSize;
+    //  50 / 18 = 2*18 = 36
     highlightSquare(squareHighlight.x, squareHighlight.y);
-
-    event.preventDefault(); // Allow drop
+    event.preventDefault();
   });
   gameContainer.addEventListener("drop", (event) => {
-    event.preventDefault();
-    const color = event.dataTransfer.getData("text/plain");
-
-    const x =
-      Math.floor((event.clientX - gameContainer.offsetLeft) / gridSize) *
-        gridSize +
-      gridSize / 2;
-    const y =
-      Math.floor((event.clientY - gameContainer.offsetTop) / gridSize) *
-        gridSize +
-      gridSize / 2;
-    const newTower = new Tower(x, y, color); // Create a new tower at the snapped grid location
-    newTower.draw(); // Ensure the new tower is drawn immediately
+    // console.log("drop", event.clientX, event.clientY);
+    const x = Math.floor((event.clientX - 130) / gridSize) * gridSize;
+    const y = Math.floor(event.clientY / gridSize) * gridSize;
+    towers.push(new Tower(x, y, event.dataTransfer.getData("text/plain")));
   });
   gameContainer.addEventListener("click", (event) => {
+    console.log("click", event.clientX, event.clientY);
     clickCheck.value = true;
-    clickCheck.x =
-      Math.floor((event.clientX - gameContainer.offsetLeft) / gridSize) *
-        gridSize +
-      gridSize / 2;
-    clickCheck.y =
-      Math.floor((event.clientY - gameContainer.offsetTop) / gridSize) *
-        gridSize +
-      gridSize / 2;
+    clickCheck.x = Math.floor((event.clientX - 130) / gridSize) * gridSize;
+    clickCheck.y = Math.floor(event.clientY / gridSize) * gridSize;
+
   });
   new Enemy(37 * 3, -37, "enemy", this);
 }
@@ -276,7 +263,7 @@ function update() {
     createGrid();
     if (squareHighlight.value) {
       for (let i = 0; i < 10 && squareHighlight.value; i++) {
-        highlightSquare(squareHighlight.x + bug, squareHighlight.y);
+        highlightSquare(squareHighlight.x, squareHighlight.y);
       }
     }
     enemies.forEach((enemy) => {
