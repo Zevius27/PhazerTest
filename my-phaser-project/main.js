@@ -1,9 +1,5 @@
 let boxSize = 37;
-// we are making a tower defense game
-// time to add towers with shooting ablity
-// the towers will be placed on the map and will shoot at the enemies
-// we shall be able to delete towers
-// we shall be able to add towers
+
 // we shall be able to upgrade towers
 // we shall be able to sell towers
 // we shall be able to buy towers
@@ -38,17 +34,22 @@ let enemies = [];
 let towers = [];
 let bullets = [];
 let graphics;
-let ballistaInstance;
-let enemyInstance;
-let instancePusher;
 let squareHighlight = { value: false, x: 0, y: 0 };
-let gridSize = 37;
+let bug = squareHighlight.x <= 100 ? -(boxSize * 1) : +boxSize;
+let gridSize = boxSize;
 let highlightSquare = (x, y) => {
   squareHighlight.value = true;
   graphics.fillStyle(0xffff00, 0.5); // Yellow color with some transparency
   graphics.fillRect(x, y, 37, 37); // Draw the highlight
   // console.log("highlightSquare", x, y);
+  graphics.lineStyle(2, 0xff0000, 1);
+  graphics.strokeCircle(
+    squareHighlight.x + 18.5 + bug,
+    squareHighlight.y + 18.5,
+    100
+  );
 };
+
 let createGrid;
 let clickCheck = { value: false, x: 0, y: 0 };
 
@@ -60,6 +61,10 @@ function create() {
   // Set the ID for the existing canvas
   const canvas = this.game.canvas;
   canvas.id = "ImGame"; // Added ID to the existing canvas
+
+  // Move the canvas to the game-container
+  document.getElementById("game-container").appendChild(canvas);
+
   createGrid = () => {
     for (let i = 0; i < canvas.width; i += boxSize) {
       for (let j = 0; j < canvas.height; j += boxSize) {
@@ -71,7 +76,7 @@ function create() {
 
   class Tower {
     constructor(x, y, name) {
-      this.x = x;
+      this.x = x + bug;
       this.y = y;
       this.range = 100;
       this.attackSpeed = 1;
@@ -113,6 +118,10 @@ function create() {
       this.draw();
       this.isInRange(enemy);
     }
+    drawRange() {
+      graphics.lineStyle(2, 0xff0000, 1);
+      graphics.strokeCircle(this.x, this.y, 100);
+    }
   }
 
   class Enemy {
@@ -137,13 +146,14 @@ function create() {
       const healthText = `${this.health}`;
       // Draw health above the goblin
       this.healthText =
-      this.healthText ||
+        this.healthText ||
         this.scene.add.text(this.x - 10, this.y - 90, healthText, {
           fontSize: "9px",
           fill: "#ffffff",
         });
       this.healthText.setText(healthText);
       this.healthText.setPosition(this.x - 10, this.y - 30);
+
       if (this.health <= 0 && !paused) {
         this.healthText.destroy();
         return;
@@ -256,24 +266,27 @@ function create() {
         gridSize +
       gridSize / 2;
   });
-  let myEnemy = new Enemy(100, -37, "enemy", this);
+  new Enemy(37 * 3, -37, "enemy", this);
 }
 
 function update() {
   graphics.clear();
-  if (squareHighlight.value) {
-    for (let i = 0; i < 10 && squareHighlight.value; i++) {
-      createGrid();
-      graphics.lineStyle(2, 0xff0000, 1);
-      graphics.strokeCircle(
-        squareHighlight.x + 18.5,
-        squareHighlight.y + 18.5,
-        100
-      );
-      highlightSquare(squareHighlight.x, squareHighlight.y);
+
+  if (paused) {
+    createGrid();
+    if (squareHighlight.value) {
+      for (let i = 0; i < 10 && squareHighlight.value; i++) {
+        highlightSquare(squareHighlight.x + bug, squareHighlight.y);
+      }
     }
+    enemies.forEach((enemy) => {
+      enemy.draw();
+    });
+    towers.forEach((tower) => {
+      tower.draw();
+      tower.drawRange();
+    });
   }
-  squareHighlight.value = false;
   if (!paused) {
     enemies.forEach((enemy) => {
       enemy.update("down");
@@ -281,12 +294,8 @@ function update() {
         towers[i].update(enemy);
       }
     });
+    towers.forEach((tower) => {
+      tower.update();
+    });
   }
-  enemies.forEach((enemy) => {
-    enemy.draw();
-  });
-
-  towers.forEach((tower) => {
-    tower.update();
-  });
 }
