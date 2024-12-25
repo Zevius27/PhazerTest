@@ -1,3 +1,4 @@
+let boxSize = 37;
 // we are making a tower defense game
 // time to add towers with shooting ablity
 // the towers will be placed on the map and will shoot at the enemies
@@ -9,8 +10,8 @@
 
 const config = {
   type: Phaser.AUTO,
-  width: 370,
-  height: 370,
+  width: boxSize * 10,
+  height: boxSize * 10,
   physics: {
     default: "arcade",
     arcade: {
@@ -26,7 +27,13 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-let boxSize = 37;
+
+let paused = true;
+let TogglePause = () => {
+  paused = !paused;
+  let pauseButton = document.getElementById("pause-button");
+  pauseButton.innerHTML = paused ? "▶️" : "⏸️"; // Play and Pause emojis
+};
 let enemies = [];
 let towers = [];
 let bullets = [];
@@ -36,8 +43,15 @@ let enemyInstance;
 let instancePusher;
 let squareHighlight = { value: false, x: 0, y: 0 };
 let gridSize = 37;
-let highlightSquare;
+let highlightSquare = (x, y) => {
+  squareHighlight.value = true;
+  graphics.fillStyle(0xffff00, 0.5); // Yellow color with some transparency
+  graphics.fillRect(x, y, 37, 37); // Draw the highlight
+  // console.log("highlightSquare", x, y);
+};
 let createGrid;
+let clickCheck = { value: false, x: 0, y: 0 };
+
 function preload() {}
 
 function create() {
@@ -53,12 +67,6 @@ function create() {
         graphics.strokeRect(i, j, boxSize, boxSize); // Draw the grid box with white stroke
       }
     }
-  };
-  highlightSquare = (x, y) => {
-    squareHighlight.value = true;
-    graphics.fillStyle(0xffff00, 0.5); // Yellow color with some transparency
-    graphics.fillRect(x, y, 37, 37); // Draw the highlight
-    console.log("highlightSquare", x, y);
   };
 
   class Tower {
@@ -76,11 +84,14 @@ function create() {
     draw() {
       graphics.fillStyle(0x0000ff, 1);
       graphics.fillRect(this.x - 18.5, this.y - 18.5, 37, 37);
-
-      graphics.lineStyle(2, 0xff0000, 1);
-      graphics.strokeCircle(this.x, this.y, this.range);
-
-      graphics.setInteractive();
+      if (
+        clickCheck.value &&
+        this.x === clickCheck.x &&
+        this.y === clickCheck.y
+      ) {
+        graphics.fillStyle(0xff00ff, 0.5); // Magenta color with some transparency
+        graphics.fillRect(this.x + 37, this.y - 37, 74, 74); // Draw the larger rectangle
+      }
     }
     isInRange(enemy) {
       if (!enemy) {
@@ -116,22 +127,27 @@ function create() {
     }
 
     draw() {
-      if (this.health <= 0) {
-        this.healthText.destroy();
-        return;
-      }
       graphics.fillStyle(0x00ff00, 1); // green
-      graphics.fillRect(this.x - gridSize / 2, this.y - gridSize / 2, gridSize, gridSize);
-      // Draw health above the goblin
+      graphics.fillRect(
+        this.x - gridSize / 2,
+        this.y - gridSize / 2,
+        gridSize,
+        gridSize
+      );
       const healthText = `${this.health}`;
+      // Draw health above the goblin
       this.healthText =
-        this.healthText ||
+      this.healthText ||
         this.scene.add.text(this.x - 10, this.y - 90, healthText, {
           fontSize: "9px",
           fill: "#ffffff",
         });
       this.healthText.setText(healthText);
       this.healthText.setPosition(this.x - 10, this.y - 30);
+      if (this.health <= 0 && !paused) {
+        this.healthText.destroy();
+        return;
+      }
     }
 
     move(dir) {
@@ -191,11 +207,6 @@ function create() {
     }
   }
 
-  // you can create a chnage direction function.
-  // ballistaInstance = new Tower(185, 185, "ballista");
-  // ballistaInstance = new Tower(100, 170, "ballista2");
-  // ballistaInstance2 = new Tower(100, 170, "ballista2");
-  // enemyInstance = new Enemy(0, 260, "goblin", this);
   const towerIcons = document.querySelectorAll(".tower-icon");
   towerIcons.forEach((icon) => {
     icon.addEventListener("dragstart", (event) => {
@@ -234,21 +245,48 @@ function create() {
     const newTower = new Tower(x, y, color); // Create a new tower at the snapped grid location
     newTower.draw(); // Ensure the new tower is drawn immediately
   });
+  gameContainer.addEventListener("click", (event) => {
+    clickCheck.value = true;
+    clickCheck.x =
+      Math.floor((event.clientX - gameContainer.offsetLeft) / gridSize) *
+        gridSize +
+      gridSize / 2;
+    clickCheck.y =
+      Math.floor((event.clientY - gameContainer.offsetTop) / gridSize) *
+        gridSize +
+      gridSize / 2;
+  });
+  let myEnemy = new Enemy(100, -37, "enemy", this);
 }
 
 function update() {
   graphics.clear();
   if (squareHighlight.value) {
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 10 && squareHighlight.value; i++) {
       createGrid();
+      graphics.lineStyle(2, 0xff0000, 1);
+      graphics.strokeCircle(
+        squareHighlight.x + 18.5,
+        squareHighlight.y + 18.5,
+        100
+      );
       highlightSquare(squareHighlight.x, squareHighlight.y);
-      squareHighlight.value = false;
     }
   }
+  squareHighlight.value = false;
+  if (!paused) {
+    enemies.forEach((enemy) => {
+      enemy.update("down");
+      for (let i = 0; i < towers.length; i++) {
+        towers[i].update(enemy);
+      }
+    });
+  }
+  enemies.forEach((enemy) => {
+    enemy.draw();
+  });
+
   towers.forEach((tower) => {
     tower.update();
-  });
-  enemies.forEach((enemy) => {
-    enemy.update("right"); // Update enemies (you can adjust direction as needed)
   });
 }

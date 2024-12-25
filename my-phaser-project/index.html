@@ -11,7 +11,7 @@
         justify-content: center;
         align-items: center;
       }
-     
+
       canvas {
         border: 3px solid red;
       }
@@ -25,7 +25,18 @@
         height: 37px;
         border: 1px solid black;
       }
-
+      #tower-menu {
+        position: absolute;
+        display: none;
+        width: 70px;
+        height: 100px;
+        background-color: rgba(255, 255, 255, 0.8);
+        border: 1px solid #ff0000;
+      }
+      #menu-item button {
+        background-color: #225fbb;
+        font-size: 10px;
+      }
     </style>
   </head>
   <body>
@@ -33,10 +44,40 @@
       <script src="main.js"></script>
     </div>
     <div id="tower-icons" class="tower-icons">
-      <div class="tower-icon" style="background-color: red" draggable="true"></div>
-      <div class="tower-icon" style="background-color: green" draggable="true"></div>
-      <div class="tower-icon" style="background-color: blue" draggable="true"></div>
-      <div class="tower-icon" style="background-color: yellow" draggable="true"></div>
+      <div
+        class="tower-icon"
+        style="background-color: red"
+        draggable="true"
+      ></div>
+      <div
+        class="tower-icon"
+        style="background-color: green"
+        draggable="true"
+      ></div>
+      <div
+        class="tower-icon"
+        style="background-color: blue"
+        draggable="true"
+      ></div>
+      <div
+        class="tower-icon"
+        style="background-color: yellow"
+        draggable="true"
+      ></div>
+    </div>
+    <button id="pause-button" onclick="TogglePause()">
+      <span id="pause-icon">⏸️</span>
+    </button>
+
+    <!-- Add this div in your HTML file -->
+    <div id="tower-menu">
+      <div class="menu-item">
+        <button id="upgrade-tower">Upgrade Tower</button>
+
+        <button id="sell-tower">Sell Tower</button>
+
+        <button id="cancel">Cancel</button>
+      </div>
     </div>
   </body>
 </html>
