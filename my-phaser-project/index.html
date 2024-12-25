@@ -11,14 +11,32 @@
         justify-content: center;
         align-items: center;
       }
+     
       canvas {
         border: 3px solid red;
       }
+      .tower-icons {
+        display: flex;
+        gap: 10px;
+        flex-direction: column;
+      }
+      .tower-icon {
+        width: 37px;
+        height: 37px;
+        border: 1px solid black;
+      }
+
     </style>
   </head>
   <body>
     <div id="game-container">
       <script src="main.js"></script>
+    </div>
+    <div id="tower-icons" class="tower-icons">
+      <div class="tower-icon" style="background-color: red" draggable="true"></div>
+      <div class="tower-icon" style="background-color: green" draggable="true"></div>
+      <div class="tower-icon" style="background-color: blue" draggable="true"></div>
+      <div class="tower-icon" style="background-color: yellow" draggable="true"></div>
     </div>
   </body>
 </html>
